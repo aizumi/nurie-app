@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8">
+  <title>塗り絵</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100vh;
+      background-color: #f0f0f0;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    #canvas {
+      flex-shrink: 0;
+      width: 800px;
+      height: 600px;
+      background: white;
+      border: 2px solid #ccc;
+      margin: 10px;
+    }
+
+    #color-palette {
+      display: flex;
+      flex-wrap: wrap;
+      width: 200px;
+      max-height: 600px;
+      overflow-y: auto;
+      margin: 10px;
+      gap: 6px;
+    }
+
+    #color-palette button {
+      width: 40px;
+      height: 40px;
+      border: 2px solid #333;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 1024px) {
+      body {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      #color-palette {
+        flex-wrap: wrap;
+        flex-direction: row;
+        width: auto;
+        max-height: none;
+        justify-content: center;
+      }
+    }
+    #change-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 12px 18px;
+  font-size: 16px;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  z-index: 100;
+}
+
+#image-selector {
+  display: none;
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  background: white;
+  border: 2px solid #ccc;
+  border-radius: 10px;
+  padding: 10px;
+  z-index: 99;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+#image-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#image-options img {
+  width: 120px;
+  height: auto;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+#image-options img:hover {
+  border-color: #007bff;
+}
+  </style>
+</head>
+<body>
+  <canvas id="canvas" width="800" height="600"></canvas>
+
+  <div id="color-palette">
+    <!-- 32色ボタン -->
+    <button style="background:#000000" data-color="#000000"></button>
+    <button style="background:#202020" data-color="#202020"></button>
+    <button style="background:#404040" data-color="#404040"></button>
+    <button style="background:#606060" data-color="#606060"></button>
+    <button style="background:#808080" data-color="#808080"></button>
+    <button style="background:#A0A0A0" data-color="#A0A0A0"></button>
+    <button style="background:#C0C0C0" data-color="#C0C0C0"></button>
+    <button style="background:#FFFFFF" data-color="#FFFFFF"></button>
+
+    <button style="background:#FF0000" data-color="#FF0000"></button>
+    <button style="background:#FFA500" data-color="#FFA500"></button>
+    <button style="background:#FFFF00" data-color="#FFFF00"></button>
+    <button style="background:#008000" data-color="#008000"></button>
+    <button style="background:#00FF00" data-color="#00FF00"></button>
+    <button style="background:#00FFFF" data-color="#00FFFF"></button>
+    <button style="background:#0000FF" data-color="#0000FF"></button>
+    <button style="background:#800080" data-color="#800080"></button>
+
+    <button style="background:#FFC0CB" data-color="#FFC0CB"></button>
+    <button style="background:#FF69B4" data-color="#FF69B4"></button>
+    <button style="background:#F5DEB3" data-color="#F5DEB3"></button>
+    <button style="background:#D2691E" data-color="#D2691E"></button>
+    <button style="background:#A52A2A" data-color="#A52A2A"></button>
+    <button style="background:#808000" data-color="#808000"></button>
+    <button style="background:#4682B4" data-color="#4682B4"></button>
+    <button style="background:#87CEEB" data-color="#87CEEB"></button>
+
+    <button style="background:#90EE90" data-color="#90EE90"></button>
+    <button style="background:#556B2F" data-color="#556B2F"></button>
+    <button style="background:#B22222" data-color="#B22222"></button>
+    <button style="background:#FFB6C1" data-color="#FFB6C1"></button>
+    <button style="background:#DDA0DD" data-color="#DDA0DD"></button>
+    <button style="background:#B0C4DE" data-color="#B0C4DE"></button>
+    <button style="background:#FFD700" data-color="#FFD700"></button>
+    <button style="background:#DAA520" data-color="#DAA520"></button>
+  </div>
+
+
+<!-- 塗り絵変更ボタン -->
+<button id="change-btn">塗り絵変更</button>
+
+<!-- モーダル：画像選択 -->
+<div id="image-selector">
+  <div id="image-options">
+    <img src="nurie1.png" data-src="nurie1.png" alt="塗り絵1">
+    <img src="kudamono.png" data-src="kudamono.png" alt="塗り絵2">
+    <img src="pikachu.png" data-src="pikachu.png" alt="塗り絵3">
+    <img src="kikansya.png" data-src="kikansya.png" alt="機関車">
+
+  </div>
+</div>
+
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    let currentColor = "#FF0000"; // 初期色
+
+    const img = new Image();
+    img.src = "nurie1.png"; // 同一ドメインに配置すること！
+    img.crossOrigin = "anonymous"; // CORSエラー回避（サーバー側も設定必要）
+
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+
+    document.querySelectorAll("#color-palette button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        currentColor = btn.dataset.color;
+      });
+    });
+
+    canvas.addEventListener("click", (e) => {
+      const x = e.offsetX;
+      const y = e.offsetY;
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      const targetColor = getPixelColor(data, x, y);
+      floodFill(data, x, y, targetColor, hexToRgba(currentColor));
+      ctx.putImageData(imageData, 0, 0);
+    });
+
+    function getPixelColor(data, x, y) {
+      const i = (y * canvas.width + x) * 4;
+      return [data[i], data[i + 1], data[i + 2], data[i + 3]];
+    }
+
+    function hexToRgba(hex) {
+      const bigint = parseInt(hex.replace("#", ""), 16);
+      return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255, 255];
+    }
+
+    function floodFill(data, x, y, targetColor, fillColor) {
+      const stack = [[x, y]];
+      const matchColor = (i) =>
+        data[i] === targetColor[0] &&
+        data[i + 1] === targetColor[1] &&
+        data[i + 2] === targetColor[2] &&
+        data[i + 3] === targetColor[3];
+
+      while (stack.length) {
+        const [cx, cy] = stack.pop();
+        const i = (cy * canvas.width + cx) * 4;
+        if (!matchColor(i)) continue;
+
+        data[i] = fillColor[0];
+        data[i + 1] = fillColor[1];
+        data[i + 2] = fillColor[2];
+        data[i + 3] = 255;
+
+        stack.push([cx + 1, cy]);
+        stack.push([cx - 1, cy]);
+        stack.push([cx, cy + 1]);
+        stack.push([cx, cy - 1]);
+      }
+    }
+    // 塗り絵変更UIの制御
+const changeBtn = document.getElementById("change-btn");
+const selector = document.getElementById("image-selector");
+const options = document.querySelectorAll("#image-options img");
+
+changeBtn.addEventListener("click", () => {
+  selector.style.display = selector.style.display === "block" ? "none" : "block";
+});
+
+options.forEach(img => {
+  img.addEventListener("click", () => {
+    const newSrc = img.dataset.src;
+    selector.style.display = "none";
+    img.crossOrigin = "anonymous"; // CORS対策
+    img.onload = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    };
+    img.src = newSrc;
+  });
+});
+
+</script>
+</body>
+</html>
